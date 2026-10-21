@@ -1,33 +1,33 @@
 import sys
 import threading
 from collections import deque
-from flask import Flask, Response
+from flask import Flask, make_response
 
 app = Flask(__name__)
 
 # Automatically maintains only the last 8 lines in memory
-lines_queue = deque(maxlen=8)
+lines_queue = deque(maxlen=4)
 queue_lock = threading.Lock()
 
 def stdin_reader_thread():
     """Blocks on stdin and appends raw text lines to the queue."""
     for line in sys.stdin:
-        with queue_lock:
-            lines_queue.append(line)
+        clean_line = line.rstrip(',\r\n');
+        if clean_line:
+            with queue_lock:
+                lines_queue.append(clean_line)
 
 @app.route('/metrics', methods=['GET'])
 def get_metrics():
-    def generate_lines():
-        # Safely snapshot the lines under lock to prevent mid-stream modifications
-        with queue_lock:
-            snapshot = list(lines_queue)
-        
-        # Yield each line directly to the streaming engine without joining
-        for line in snapshot:
-            yield line
+    # Safely snapshot the lines under lock to prevent mid-stream modifications
+    with queue_lock:
+        # Snapshot the current lines
+        snapshot = list(lines_queue)
 
-    # Return a streaming response
-    return Response(generate_lines(), mimetype='text/plain')
+    # Join all lines into a single string separated by semicolons
+    single_line_output = " ".join(snapshot) + "\n"
+
+    return make_response(single_line_output, 200, {'Content-Type': 'text/plain'})
 
 if __name__ == '__main__':
     watcher = threading.Thread(target=stdin_reader_thread, daemon=True)
