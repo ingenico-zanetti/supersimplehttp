@@ -15,9 +15,9 @@ def get_imeisv():
     )
 
     if not subscriber:
-        return jsonify({"error": "subscriber not found"}), 404
+        return "subscriber not found"
 
-    return jsonify({"imeisv": subscriber.get("imeisv")})
+    return subscriber.get("imeisv")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8081)
