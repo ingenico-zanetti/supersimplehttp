@@ -5,8 +5,8 @@ from flask import Flask, make_response
 
 app = Flask(__name__)
 
-# Automatically maintains only the last 8 lines in memory
-lines_queue = deque(maxlen=4)
+# Automatically maintains only the last 2 lines in memory
+lines_queue = deque(maxlen=2)
 queue_lock = threading.Lock()
 
 def stdin_reader_thread():
